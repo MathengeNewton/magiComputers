@@ -11,12 +11,15 @@ type Ticket = {
   status: string;
   deviceType: string | null;
   issueSummary: string | null;
+  message: string | null;
+  name: string;
+  phone: string;
   createdAt: string;
 };
 
 export default function MyTicketsPage() {
   const router = useRouter();
-  const apiUrl = useMemo(() => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004', []);
+  const apiUrl = useMemo(() => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000', []);
   const { isAuthenticated, loading: authLoading, accessToken } = useCustomerAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,51 +73,77 @@ export default function MyTicketsPage() {
     return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200';
   };
 
+  const formatDate = (d: string) => {
+    const date = new Date(d);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return `Today, ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   return (
     <div className="min-h-screen bg-shop-bg flex flex-col">
       <ShopHeader />
-      <main className="flex-1 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold text-shop-fg">My repair tickets</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-shop-fg">My repair tickets</h1>
           <Link
             href="/repair"
-            className="px-4 py-2 bg-shop-accent text-shop-bg font-medium rounded-lg hover:opacity-90"
+            className="px-4 py-2.5 bg-shop-accent text-shop-bg font-medium rounded-lg hover:opacity-90 transition-opacity"
           >
             New repair
           </Link>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
+          <div className="flex justify-center py-16">
             <div className="animate-spin rounded-full h-10 w-10 border-2 border-shop-accent border-t-transparent" />
           </div>
         ) : tickets.length === 0 ? (
-          <div className="text-center py-16 bg-shop-card rounded-xl border border-shop-border">
-            <p className="text-shop-muted mb-4">No repair tickets yet.</p>
-            <Link href="/repair" className="inline-block px-6 py-3 bg-shop-accent text-shop-bg font-medium rounded-lg hover:opacity-90">
+          <div className="text-center py-20 bg-shop-card rounded-2xl border border-shop-border">
+            <p className="text-shop-muted mb-6">No repair tickets yet.</p>
+            <Link href="/repair" className="inline-block px-6 py-3 bg-shop-accent text-shop-bg font-medium rounded-lg hover:opacity-90 transition-opacity">
               Book a repair
             </Link>
           </div>
         ) : (
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {tickets.map((t) => (
               <li key={t.id}>
                 <Link
                   href={`/repair/tickets/${t.id}`}
-                  className="block p-4 bg-shop-card border border-shop-border rounded-xl hover:border-shop-muted transition-colors"
+                  className="block p-5 sm:p-6 bg-shop-card border border-shop-border rounded-xl hover:border-shop-accent/50 hover:shadow-lg transition-all group"
                 >
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="font-medium text-shop-fg capitalize">
-                      {t.deviceType || 'Device'}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColor(t.status)}`}>
-                      {t.status}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <span className="font-semibold text-shop-fg capitalize">
+                          {t.deviceType || 'Device'}
+                        </span>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColor(t.status)}`}>
+                          {t.status}
+                        </span>
+                        <span className="text-xs text-shop-muted">
+                          {formatDate(t.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-shop-muted line-clamp-2 mb-2">
+                        {t.issueSummary || t.message || 'No description'}
+                      </p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-shop-muted">
+                        <span>{t.phone || '—'}</span>
+                        <span>{t.name || '—'}</span>
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-shop-accent group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1 text-sm font-medium">
+                      View details
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </span>
                   </div>
-                  <p className="text-sm text-shop-muted line-clamp-1">{t.issueSummary || 'No description'}</p>
-                  <p className="text-xs text-shop-muted mt-2">
-                    {new Date(t.createdAt).toLocaleDateString()}
-                  </p>
                 </Link>
               </li>
             ))}

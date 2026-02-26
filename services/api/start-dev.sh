@@ -13,4 +13,4 @@ fi
 cd /app/services/api
 pnpm exec prisma generate
 pnpm exec prisma migrate deploy
-exec npx ts-node-dev --respawn --transpile-only src/main.ts
+exec pnpm exec ts-node -r tsconfig-paths/register --transpile-only src/main.ts

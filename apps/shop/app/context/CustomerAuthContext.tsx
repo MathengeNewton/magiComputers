@@ -20,6 +20,8 @@ type CustomerAuthContextValue = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: { email: string; password: string; name: string; phone?: string }) => Promise<void>;
+  loginByPhone: (phone: string, password: string) => Promise<void>;
+  registerByPhone: (data: { name: string; phone: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isAuthenticated: boolean;
@@ -161,6 +163,50 @@ export function CustomerAuthProvider({
     [apiUrl, tenantId, persist],
   );
 
+  const loginByPhone = useCallback(
+    async (phone: string, password: string) => {
+      const res = await fetch(`${apiUrl}/store/repair/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId, phone, password }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Login failed');
+      }
+      const data = await res.json();
+      setAccessToken(data.accessToken);
+      setCustomer(data.customer);
+      persist(
+        { accessToken: data.accessToken, refreshToken: data.refreshToken },
+        data.customer,
+      );
+    },
+    [apiUrl, tenantId, persist],
+  );
+
+  const registerByPhone = useCallback(
+    async (data: { name: string; phone: string; password: string }) => {
+      const res = await fetch(`${apiUrl}/store/repair/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId, ...data }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Registration failed');
+      }
+      const out = await res.json();
+      setAccessToken(out.accessToken);
+      setCustomer(out.customer);
+      persist(
+        { accessToken: out.accessToken, refreshToken: out.refreshToken },
+        out.customer,
+      );
+    },
+    [apiUrl, tenantId, persist],
+  );
+
   const logout = useCallback(async () => {
     const token = localStorage.getItem(ACCESS_TOKEN_KEY);
     if (token) {
@@ -196,6 +242,8 @@ export function CustomerAuthProvider({
     loading,
     login,
     register,
+    loginByPhone,
+    registerByPhone,
     logout,
     refreshProfile,
     isAuthenticated: !!accessToken && !!customer,

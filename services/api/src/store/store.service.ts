@@ -235,6 +235,9 @@ export class StoreService {
         status: true,
         deviceType: true,
         issueSummary: true,
+        message: true,
+        name: true,
+        phone: true,
         createdAt: true,
       },
     });

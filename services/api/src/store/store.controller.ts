@@ -127,6 +127,26 @@ export class StoreController {
     return this.storeAuthService.login(tenantId, email, password);
   }
 
+  @Post('repair/register')
+  async registerByPhone(
+    @Body() body: { tenantId: string; name: string; phone: string; password: string },
+  ) {
+    const { tenantId, name, phone, password } = body;
+    if (!tenantId || !name || !phone || !password) {
+      throw new BadRequestException('tenantId, name, phone, and password required');
+    }
+    return this.storeAuthService.registerByPhone(tenantId, { name, phone, password });
+  }
+
+  @Post('repair/login')
+  async loginByPhone(@Body() body: { tenantId: string; phone: string; password: string }) {
+    const { tenantId, phone, password } = body;
+    if (!tenantId || !phone || !password) {
+      throw new BadRequestException('tenantId, phone, and password required');
+    }
+    return this.storeAuthService.loginByPhone(tenantId, phone, password);
+  }
+
   @Post('refresh')
   async refresh(@Body() body: { refreshToken: string; customerId: string }) {
     const { refreshToken, customerId } = body;
@@ -189,6 +209,23 @@ export class StoreController {
       deviceType,
       issueSummary,
     });
+  }
+
+  @Post('repair/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadRepairFilePublic(
+    @Query('tenantId') tenantId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!tenantId) throw new BadRequestException('tenantId required');
+    if (!file?.buffer) throw new BadRequestException('No file uploaded');
+    return this.mediaService.uploadFile(
+      tenantId,
+      file.buffer,
+      file.mimetype,
+      file.size,
+      file.originalname,
+    );
   }
 
   @Post('repair')

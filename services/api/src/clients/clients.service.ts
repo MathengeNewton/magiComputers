@@ -25,31 +25,12 @@ export class ClientsService {
   async getDetail(tenantId: string, id: string) {
     const client = await this.prisma.client.findFirst({
       where: { tenantId, id },
-      include: {
-        integrations: {
-          include: {
-            destinations: true,
-          },
-        },
-        posts: {
-          select: { id: true, status: true },
-        },
-      },
     });
     if (!client) throw new NotFoundException(`Client with id "${id}" not found`);
-
-    const postCountByStatus = (client.posts as { status: string }[]).reduce(
-      (acc, p) => {
-        acc[p.status] = (acc[p.status] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-
     return {
       ...client,
-      postCountByStatus,
-      totalPosts: client.posts.length,
+      postCountByStatus: {} as Record<string, number>,
+      totalPosts: 0,
     };
   }
 
@@ -88,13 +69,10 @@ export class ClientsService {
   }
 
   async socialSummary(tenantId: string, clientId: string) {
-    // At least one destination connected for this client
+    // Destinations are tenant-scoped (clientId removed from Integration)
     const destinationsCount = await this.prisma.destination.count({
       where: {
-        integration: {
-          tenantId,
-          clientId,
-        },
+        integration: { tenantId },
       },
     });
 

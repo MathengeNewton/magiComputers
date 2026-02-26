@@ -36,6 +36,16 @@ export class StoreAuthService {
       },
       select: { id: true, email: true, name: true, phone: true, tenantId: true },
     });
+    // Link any repair tickets submitted with this email (before signup) to the new account
+    await this.prisma.contactMessage.updateMany({
+      where: {
+        tenantId,
+        type: 'repair',
+        email: customer.email,
+        customerId: null,
+      },
+      data: { customerId: customer.id },
+    });
     return this.loginCustomer(customer);
   }
 
@@ -50,6 +60,16 @@ export class StoreAuthService {
     if (!valid) {
       throw new UnauthorizedException('Invalid email or password');
     }
+    // Link any repair tickets submitted with this email (before login) to the account
+    await this.prisma.contactMessage.updateMany({
+      where: {
+        tenantId,
+        type: 'repair',
+        email: customer.email,
+        customerId: null,
+      },
+      data: { customerId: customer.id },
+    });
     return this.loginCustomer({
       id: customer.id,
       email: customer.email,
@@ -146,6 +166,91 @@ export class StoreAuthService {
     const resetLink = `${process.env.SHOP_URL || 'http://localhost:3003'}/reset-password?token=${token}`;
     console.log(`[StoreAuth] Password reset link for ${customer.email}: ${resetLink}`);
     return { message: 'If an account exists with this email, you will receive a reset link.', resetLink };
+  }
+
+  /** Register with phone only (repair flow) - uses phone as identifier, stores synthetic email */
+  async registerByPhone(tenantId: string, data: { name: string; phone: string; password: string }) {
+    const { name, phone, password } = data;
+    const digits = phone.replace(/\D/g, '');
+    const normalizedPhone = digits.length >= 9 ? (digits.startsWith('254') ? digits : `254${digits.slice(-9)}`) : phone.trim();
+    if (!normalizedPhone || normalizedPhone.length < 9) {
+      throw new BadRequestException('Valid phone number required');
+    }
+    const syntheticEmail = `${normalizedPhone}@repair.local`;
+    const existingByEmail = await this.prisma.customer.findUnique({
+      where: { tenantId_email: { tenantId, email: syntheticEmail } },
+    });
+    const last9 = normalizedPhone.replace(/\D/g, '').slice(-9);
+    const byPhone = await this.prisma.customer.findMany({
+      where: { tenantId, phone: { not: null } },
+    });
+    const existingByPhone = byPhone.find((c) => c.phone && c.phone.replace(/\D/g, '').endsWith(last9));
+    const existing = existingByEmail ?? existingByPhone ?? undefined;
+    if (existing) {
+      throw new ConflictException('An account with this phone number already exists');
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const customer = await this.prisma.customer.create({
+      data: {
+        tenantId,
+        email: syntheticEmail,
+        passwordHash,
+        name: name.trim(),
+        phone: normalizedPhone,
+      },
+      select: { id: true, email: true, name: true, phone: true, tenantId: true },
+    });
+    // Link repair tickets submitted with this phone (before signup) to the new account
+    const tickets = await this.prisma.contactMessage.findMany({
+      where: { tenantId, type: 'repair', customerId: null },
+      select: { id: true, phone: true },
+    });
+    const toLink = tickets.filter((t) => t.phone && t.phone.replace(/\D/g, '').endsWith(last9));
+    if (toLink.length) {
+      await this.prisma.contactMessage.updateMany({
+        where: { id: { in: toLink.map((t) => t.id) } },
+        data: { customerId: customer.id },
+      });
+    }
+    return this.loginCustomer(customer);
+  }
+
+  /** Login with phone + password (repair flow) */
+  async loginByPhone(tenantId: string, phone: string, password: string) {
+    const digits = phone.replace(/\D/g, '');
+    const last9 = digits.length >= 9 ? digits.slice(-9) : '';
+    if (!last9) throw new BadRequestException('Valid phone number required');
+    const customers = await this.prisma.customer.findMany({
+      where: { tenantId, phone: { not: null } },
+    });
+    const found = customers.find((c) => c.phone && c.phone.replace(/\D/g, '').endsWith(last9));
+    if (!found) {
+      throw new UnauthorizedException('Invalid phone or password');
+    }
+    const customer = found;
+    const valid = await bcrypt.compare(password, customer.passwordHash);
+    if (!valid) {
+      throw new UnauthorizedException('Invalid phone or password');
+    }
+    // Link repair tickets submitted with this phone to the account
+    const tickets = await this.prisma.contactMessage.findMany({
+      where: { tenantId, type: 'repair', customerId: null },
+      select: { id: true, phone: true },
+    });
+    const toLink = tickets.filter((t) => t.phone && t.phone.replace(/\D/g, '').endsWith(last9));
+    if (toLink.length) {
+      await this.prisma.contactMessage.updateMany({
+        where: { id: { in: toLink.map((t) => t.id) } },
+        data: { customerId: customer.id },
+      });
+    }
+    return this.loginCustomer({
+      id: customer.id,
+      email: customer.email,
+      name: customer.name,
+      phone: customer.phone,
+      tenantId: customer.tenantId,
+    });
   }
 
   async resetPassword(token: string, newPassword: string) {

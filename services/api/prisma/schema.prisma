@@ -45,8 +45,8 @@ model Customer {
   passwordHash String   @map("password_hash")
   name         String
   phone        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   tenant            Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   refreshTokens     CustomerRefreshToken[]
@@ -65,7 +65,7 @@ model CustomerRefreshToken {
   customerId String   @map("customer_id")
   tokenHash  String   @map("token_hash")
   expiresAt  DateTime @map("expires_at")
-  createdAt  DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
@@ -79,7 +79,7 @@ model CustomerPasswordReset {
   customerId String   @map("customer_id")
   tokenHash  String   @map("token_hash")
   expiresAt  DateTime @map("expires_at")
-  createdAt  DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at")
 
   customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
@@ -656,8 +656,8 @@ model ContactMessage {
   deviceType     String?  @map("device_type")
   issueSummary   String?  @map("issue_summary") @db.Text
   internalNote   String?  @map("internal_note") @db.Text
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
@@ -679,7 +679,7 @@ model TicketMessage {
   customerId       String?  @map("customer_id")
   userId           String?  @map("user_id")
   body             String   @db.Text
-  createdAt        DateTime @default(now())
+  createdAt        DateTime @default(now()) @map("created_at")
 
   ticket     ContactMessage @relation(fields: [contactMessageId], references: [id], onDelete: Cascade)
   customer   Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
@@ -697,7 +697,7 @@ model TicketAttachment {
   mediaId          String?  @map("media_id")
   url              String   @db.Text
   mimeType         String   @map("mime_type")
-  createdAt        DateTime @default(now())
+  createdAt        DateTime @default(now()) @map("created_at")
 
   ticket  ContactMessage @relation(fields: [contactMessageId], references: [id], onDelete: Cascade)
   message TicketMessage? @relation(fields: [ticketMessageId], references: [id], onDelete: Cascade)

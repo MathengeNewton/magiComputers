@@ -43,18 +43,6 @@ export default function ShopHeader({ categories = [], currentCategory }: ShopHea
                 My tickets
               </Link>
             )}
-            <Link
-              href="/about"
-              className="px-3 py-2 rounded-lg text-sm font-medium text-shop-fg hover:bg-shop-border/50 transition-colors"
-            >
-              About us
-            </Link>
-            <Link
-              href="/contact"
-              className="px-3 py-2 rounded-lg text-sm font-medium text-shop-fg hover:bg-shop-border/50 transition-colors"
-            >
-              Contact us
-            </Link>
             <ThemeToggle />
             {isAuthenticated ? (
               <>

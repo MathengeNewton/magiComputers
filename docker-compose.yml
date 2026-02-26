@@ -91,6 +91,7 @@ services:
       minio:
         condition: service_healthy
     volumes:
+      - ./services/api/start-dev.sh:/app/services/api/start-dev.sh
       - ./services/api/src:/app/services/api/src
       - ./services/api/prisma:/app/services/api/prisma
       - ./services/api/test:/app/services/api/test
@@ -170,12 +171,11 @@ services:
     volumes:
       - ./apps/shop:/app/apps/shop
       - ./packages:/app/packages
-      - /app/node_modules
-      - /app/apps/shop/node_modules
-      - /app/apps/shop/.next
-    command: sh -c "cd /app && pnpm install --no-frozen-lockfile && exec pnpm --filter shop dev"
+      - shop_next:/app/apps/shop/.next
+    command: pnpm --filter shop dev
 
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+  shop_next:
