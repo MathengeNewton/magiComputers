@@ -171,8 +171,10 @@ services:
     volumes:
       - ./apps/shop:/app/apps/shop
       - ./packages:/app/packages
+      - /app/node_modules
+      - /app/apps/shop/node_modules
       - shop_next:/app/apps/shop/.next
-    command: pnpm --filter shop dev
+    command: sh -c "cd /app && pnpm install --no-frozen-lockfile && exec pnpm --filter shop dev"
 
 volumes:
   postgres_data:
