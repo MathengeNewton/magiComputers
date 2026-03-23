@@ -21,7 +21,9 @@ model Tenant {
   clients          Client[]
   users            User[]
   media            Media[]
+  storefrontConfig StorefrontConfig?
   products         Product[]
+  workstations     Workstation[]
   productCategories ProductCategory[]
   posts       Post[]
   integrations Integration[]
@@ -174,6 +176,8 @@ model Media {
   tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   postMedia   PostMedia[]
   productImages ProductImage[]
+  workstationCovers Workstation[] @relation("WorkstationCover")
+  storefrontHeroImage StorefrontConfig[] @relation("StorefrontHeroImage")
 
   @@index([tenantId])
   @@map("media")
@@ -231,6 +235,8 @@ model Product {
   minSellPrice    Decimal  @db.Decimal(10, 2) @map("min_sell_price") // Floor price
   listPrice       Decimal  @db.Decimal(10, 2) @map("list_price") // Price shown on shop
   priceDisclaimer String?  @db.Text @map("price_disclaimer") // e.g. "slightly negotiable"
+  isFeaturedHome  Boolean  @default(false) @map("is_featured_home")
+  featuredOrder   Int      @default(0) @map("featured_order")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -240,6 +246,7 @@ model Product {
   variants      ProductVariant[]
   images        ProductImage[]
   postProducts  PostProduct[]
+  workstationProducts WorkstationProduct[]
   orderItems    OrderItem[]
   cartItems     CartItem[]
 
@@ -249,6 +256,67 @@ model Product {
   @@index([categoryId])
   @@index([status])
   @@map("products")
+}
+
+model Workstation {
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
+  title        String
+  slug         String
+  summary      String?  @db.Text
+  description  String?  @db.Text
+  coverMediaId String?  @map("cover_media_id")
+  status       String   @default("draft") // 'draft' | 'published'
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  coverMedia Media?  @relation("WorkstationCover", fields: [coverMediaId], references: [id], onDelete: SetNull)
+  products WorkstationProduct[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, status, sortOrder])
+  @@index([coverMediaId])
+  @@map("workstations")
+}
+
+model WorkstationProduct {
+  id            String   @id @default(uuid())
+  workstationId String   @map("workstation_id")
+  productId     String   @map("product_id")
+  order         Int      @default(0)
+  isPrimary     Boolean  @default(false) @map("is_primary")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  workstation Workstation @relation(fields: [workstationId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([workstationId, productId])
+  @@index([workstationId, order])
+  @@index([productId])
+  @@map("workstation_products")
+}
+
+model StorefrontConfig {
+  id                  String   @id @default(uuid())
+  tenantId            String   @unique @map("tenant_id")
+  heroEyebrow         String   @default("MagiComputers") @map("hero_eyebrow")
+  heroTitle           String   @default("Electronics and repairs done right.") @map("hero_title")
+  heroDescription     String   @default("From custom workstation builds to day-to-day devices, we supply quality gear and dependable repair support for homes and offices.") @map("hero_description") @db.Text
+  heroImageMediaId    String?  @map("hero_image_media_id")
+  primaryButtonLabel  String   @default("Shop now") @map("primary_button_label")
+  primaryButtonHref   String   @default("/shop") @map("primary_button_href")
+  secondaryButtonLabel String  @default("Book repair") @map("secondary_button_label")
+  secondaryButtonHref String   @default("/repair") @map("secondary_button_href")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  tenant         Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  heroImageMedia Media?  @relation("StorefrontHeroImage", fields: [heroImageMediaId], references: [id], onDelete: SetNull)
+
+  @@index([heroImageMediaId])
+  @@map("storefront_configs")
 }
 
 model ProductVariant {

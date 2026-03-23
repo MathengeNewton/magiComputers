@@ -58,6 +58,8 @@ export class ProductsService {
         minSellPrice: validated.minSellPrice,
         listPrice: validated.listPrice,
         priceDisclaimer: validated.priceDisclaimer || null,
+        isFeaturedHome: validated.isFeaturedHome ?? false,
+        featuredOrder: validated.featuredOrder ?? 0,
       },
     });
 
@@ -236,6 +238,12 @@ export class ProductsService {
     }
     if (validated.priceDisclaimer !== undefined) {
       updateData.priceDisclaimer = validated.priceDisclaimer || null;
+    }
+    if (validated.isFeaturedHome !== undefined) {
+      updateData.isFeaturedHome = validated.isFeaturedHome;
+    }
+    if (validated.featuredOrder !== undefined) {
+      updateData.featuredOrder = validated.featuredOrder;
     }
     if (validated.categoryId !== undefined) {
       updateData.categoryId = validated.categoryId || null;

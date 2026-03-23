@@ -117,6 +117,16 @@ export default function AdminNav({ title = 'MagiComputers', backHref }: AdminNav
                   </svg>
                   Account
                 </Link>
+                <Link
+                  href="/shop-config"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
+                  </svg>
+                  Shop Config
+                </Link>
                 {profile?.role === 'admin' && (
                   <Link
                     href="/staff"

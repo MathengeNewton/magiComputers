@@ -23,6 +23,8 @@ type Product = {
   currency: string;
   slug: string;
   status: string;
+  isFeaturedHome?: boolean;
+  featuredOrder?: unknown;
   supplier?: Supplier;
   category?: Category | null;
   images?: ProductImage[];
@@ -40,6 +42,8 @@ const defaultProduct = {
   minSellPrice: 0,
   listPrice: 0,
   priceDisclaimer: '',
+  isFeaturedHome: false,
+  featuredOrder: 0,
   imageIds: [] as string[],
 };
 
@@ -251,6 +255,8 @@ function CatalogContent() {
       minSellPrice: num(p.minSellPrice ?? p.price),
       listPrice: num(p.listPrice ?? p.price),
       priceDisclaimer: (p as Product & { priceDisclaimer?: string }).priceDisclaimer ?? '',
+      isFeaturedHome: !!p.isFeaturedHome,
+      featuredOrder: num(p.featuredOrder ?? 0),
       imageIds: sorted.map((img) => img.mediaId),
     });
     setShowProductForm(true);
@@ -274,6 +280,8 @@ function CatalogContent() {
       listPrice: Number(productForm.listPrice),
       price: Number(productForm.listPrice),
       priceDisclaimer: productForm.priceDisclaimer?.trim() || undefined,
+      isFeaturedHome: !!productForm.isFeaturedHome,
+      featuredOrder: Number(productForm.featuredOrder) || 0,
       imageIds: productForm.imageIds?.length ? productForm.imageIds : undefined,
     };
     if (!payload.title || !payload.supplierId) {
@@ -348,15 +356,17 @@ function CatalogContent() {
       _categoryName: p.category?.name ?? '',
       _supplierName: p.supplier?.name ?? '',
       _priceStr: `${p.currency} ${num(p.listPrice ?? p.price).toFixed(2)}`,
+      _featured: p.isFeaturedHome ? 'Yes' : 'No',
     })),
     [products]
   );
 
-  const productColumns: DataTableColumn<Product & { _categoryName: string; _supplierName: string; _priceStr: string }>[] = [
+  const productColumns: DataTableColumn<Product & { _categoryName: string; _supplierName: string; _priceStr: string; _featured: string }>[] = [
     { key: 'title', label: 'Product', sortable: true, exportValue: (r) => r.title, render: (r) => <><div className="font-medium">{r.title}</div><div className="text-xs text-gray-500">{r.slug}</div></> },
     { key: '_categoryName', label: 'Category', sortable: true, exportValue: (r) => r._categoryName || '—', render: (r) => r._categoryName || '—' },
     { key: '_supplierName', label: 'Supplier', sortable: true, exportValue: (r) => r._supplierName, render: (r) => r._supplierName || '—' },
     { key: '_priceStr', label: 'Price', sortable: true, exportValue: (r) => r._priceStr, render: (r) => r._priceStr },
+    { key: '_featured', label: 'Featured', sortable: true, exportValue: (r) => r._featured, render: (r) => r._featured },
     { key: 'status', label: 'Status', sortable: true, exportValue: (r) => r.status, render: (r) => <span className={`px-2 py-1 rounded-full text-xs font-medium ${r.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700'}`}>{r.status}</span> },
     {
       key: 'actions',
@@ -627,6 +637,26 @@ function CatalogContent() {
                     <option value="draft">Draft</option>
                     <option value="published">Published</option>
                   </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={!!productForm.isFeaturedHome}
+                    onChange={(e) => setProductForm((f) => ({ ...f, isFeaturedHome: e.target.checked }))}
+                  />
+                  Feature on homepage
+                </label>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Feature order</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={productForm.featuredOrder}
+                    onChange={(e) => setProductForm((f) => ({ ...f, featuredOrder: parseInt(e.target.value, 10) || 0 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
                 </div>
               </div>
             </div>

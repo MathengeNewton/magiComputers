@@ -37,6 +37,8 @@ const productBaseSchema = z.object({
   minSellPrice: z.number().positive(),
   listPrice: z.number().positive(),
   priceDisclaimer: z.string().max(500).optional(),
+  isFeaturedHome: z.boolean().optional(),
+  featuredOrder: z.number().int().min(0).optional(),
   variantName: z.string().optional(),
   variantOptions: z.array(z.string()).optional(),
   imageIds: z.array(z.string().uuid()).optional(),

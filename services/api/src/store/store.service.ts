@@ -151,6 +151,169 @@ export class StoreService {
     return product;
   }
 
+  async getFeaturedProducts(tenantId?: string, limit = 8) {
+    if (!tenantId) return [];
+
+    return this.prisma.product.findMany({
+      where: {
+        tenantId,
+        status: 'published',
+        isFeaturedHome: true,
+      },
+      include: {
+        supplier: true,
+        category: { select: { id: true, name: true, slug: true } },
+        images: {
+          include: { media: true },
+          orderBy: { order: 'asc' },
+          take: 1,
+        },
+      },
+      orderBy: [{ featuredOrder: 'asc' }, { updatedAt: 'desc' }],
+      take: Math.min(20, Math.max(1, limit)),
+    });
+  }
+
+  async getHomepageConfig(tenantId?: string) {
+    if (!tenantId) {
+      return {
+        heroEyebrow: 'MagiComputers',
+        heroTitle: 'Electronics and repairs done right.',
+        heroDescription:
+          'From custom workstation builds to day-to-day devices, we supply quality gear and dependable repair support for homes and offices.',
+        heroImageUrl: null,
+        primaryButtonLabel: 'Shop now',
+        primaryButtonHref: '/shop',
+        secondaryButtonLabel: 'Book repair',
+        secondaryButtonHref: '/repair',
+      };
+    }
+
+    const config = await this.prisma.storefrontConfig.findUnique({
+      where: { tenantId },
+      include: { heroImageMedia: { select: { url: true } } },
+    });
+
+    if (!config) {
+      return {
+        heroEyebrow: 'MagiComputers',
+        heroTitle: 'Electronics and repairs done right.',
+        heroDescription:
+          'From custom workstation builds to day-to-day devices, we supply quality gear and dependable repair support for homes and offices.',
+        heroImageUrl: null,
+        primaryButtonLabel: 'Shop now',
+        primaryButtonHref: '/shop',
+        secondaryButtonLabel: 'Book repair',
+        secondaryButtonHref: '/repair',
+      };
+    }
+
+    return {
+      heroEyebrow: config.heroEyebrow,
+      heroTitle: config.heroTitle,
+      heroDescription: config.heroDescription,
+      heroImageUrl: config.heroImageMedia?.url ?? null,
+      primaryButtonLabel: config.primaryButtonLabel,
+      primaryButtonHref: config.primaryButtonHref,
+      secondaryButtonLabel: config.secondaryButtonLabel,
+      secondaryButtonHref: config.secondaryButtonHref,
+    };
+  }
+
+  async getWorkstations(tenantId?: string, limit = 6) {
+    if (!tenantId) return [];
+
+    const items = await this.prisma.workstation.findMany({
+      where: { tenantId, status: 'published' },
+      include: {
+        coverMedia: { select: { url: true } },
+        products: {
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            product: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                currency: true,
+                listPrice: true,
+                price: true,
+                images: {
+                  include: { media: true },
+                  orderBy: { order: 'asc' },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }],
+      take: Math.min(20, Math.max(1, limit)),
+    });
+
+    return items.map((item) => ({
+      id: item.id,
+      slug: item.slug,
+      title: item.title,
+      summary: item.summary,
+      coverImageUrl: item.coverMedia?.url ?? null,
+      productCount: item.products.length,
+      linkedProductsPreview: item.products.slice(0, 4).map((entry) => ({
+        id: entry.product.id,
+        title: entry.product.title,
+        slug: entry.product.slug,
+      })),
+    }));
+  }
+
+  async getWorkstationBySlug(slug: string, tenantId?: string) {
+    if (!tenantId) throw new NotFoundException('Workstation not found');
+
+    const item = await this.prisma.workstation.findFirst({
+      where: { tenantId, slug, status: 'published' },
+      include: {
+        coverMedia: { select: { url: true } },
+        products: {
+          orderBy: [{ isPrimary: 'desc' }, { order: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            product: {
+              include: {
+                images: {
+                  include: { media: true },
+                  orderBy: { order: 'asc' },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!item) throw new NotFoundException('Workstation not found');
+
+    return {
+      id: item.id,
+      slug: item.slug,
+      title: item.title,
+      summary: item.summary,
+      description: item.description,
+      coverImageUrl: item.coverMedia?.url ?? null,
+      products: item.products.map((entry) => ({
+        id: entry.product.id,
+        slug: entry.product.slug,
+        title: entry.product.title,
+        description: entry.product.description,
+        currency: entry.product.currency,
+        price: entry.product.price,
+        listPrice: entry.product.listPrice,
+        imageUrl: entry.product.images[0]?.media?.url ?? null,
+        isPrimary: entry.isPrimary,
+      })),
+    };
+  }
+
   async getOrderByPublicId(publicId: string) {
     const order = await this.prisma.order.findUnique({
       where: { publicId },

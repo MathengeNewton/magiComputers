@@ -131,8 +131,10 @@ export default function DashboardPage() {
   }
 
   const quickActions = [
-    { title: 'Shop', href: process.env.NEXT_PUBLIC_SHOP_URL || 'http://localhost:3003', icon: '🛍️', external: true },
+    { title: 'Shop Config', href: '/shop-config', icon: '⚙️' },
+    { title: 'View Shop', href: process.env.NEXT_PUBLIC_SHOP_URL || 'http://localhost:3003', icon: '🛍️', external: true },
     { title: 'Catalog', href: '/catalog', icon: '📦' },
+    { title: 'Workstations', href: '/workstations', icon: '🖥️' },
     { title: 'Orders', href: '/orders', icon: '🛒' },
     { title: 'Enquiries', href: '/enquiries', icon: '📋' },
     { title: 'Posts', href: '/posts', icon: '📝' },

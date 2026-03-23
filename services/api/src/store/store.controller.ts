@@ -51,9 +51,40 @@ export class StoreController {
     });
   }
 
+  @Get('products/featured')
+  async getFeaturedProducts(
+    @Query('tenantId') tenantId?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const parsedLimit = Number.parseInt(limit || '', 10);
+    return this.storeService.getFeaturedProducts(tenantId, Number.isFinite(parsedLimit) ? parsedLimit : 8);
+  }
+
   @Get('products/:slug')
   async getProduct(@Param('slug') slug: string, @Query('tenantId') tenantId?: string) {
     return this.storeService.getProduct(slug, tenantId);
+  }
+
+  @Get('workstations')
+  async getWorkstations(
+    @Query('tenantId') tenantId?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const parsedLimit = Number.parseInt(limit || '', 10);
+    return this.storeService.getWorkstations(tenantId, Number.isFinite(parsedLimit) ? parsedLimit : 6);
+  }
+
+  @Get('workstations/:slug')
+  async getWorkstationBySlug(
+    @Param('slug') slug: string,
+    @Query('tenantId') tenantId?: string,
+  ) {
+    return this.storeService.getWorkstationBySlug(slug, tenantId);
+  }
+
+  @Get('homepage-config')
+  async getHomepageConfig(@Query('tenantId') tenantId?: string) {
+    return this.storeService.getHomepageConfig(tenantId);
   }
 
   @Get('orders/:publicId')
