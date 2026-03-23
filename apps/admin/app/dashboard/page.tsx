@@ -24,6 +24,14 @@ type ActivityItem = { type: 'post' | 'order'; id: string; label: string; created
 export default function DashboardPage() {
   const router = useRouter();
   const apiUrl = useMemo(() => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004', []);
+  const shopUrl = useMemo(() => {
+    const configured = process.env.NEXT_PUBLIC_SHOP_URL?.trim();
+    if (configured) return configured;
+    if (typeof window !== 'undefined') {
+      return `${window.location.protocol}//${window.location.hostname}:7002`;
+    }
+    return 'http://localhost:7002';
+  }, []);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats>({
@@ -132,7 +140,7 @@ export default function DashboardPage() {
 
   const quickActions = [
     { title: 'Shop Config', href: '/shop-config', icon: '⚙️' },
-    { title: 'View Shop', href: process.env.NEXT_PUBLIC_SHOP_URL || 'http://localhost:3003', icon: '🛍️', external: true },
+    { title: 'View Shop', href: shopUrl, icon: '🛍️', external: true },
     { title: 'Catalog', href: '/catalog', icon: '📦' },
     { title: 'Workstations', href: '/workstations', icon: '🖥️' },
     { title: 'Orders', href: '/orders', icon: '🛒' },
